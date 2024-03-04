@@ -1,0 +1,93 @@
+%{
+    #include "output.hpp"
+    int yylex();
+    void yyerror(const char *err_msg);
+    extern int yylineno;
+%}
+
+%nonassoc NUM
+%token ID
+%token STRING
+%token INT
+%token BYTE
+%nonassoc B
+%token BOOL
+%left OR
+%left AND
+%token TRUE
+%token FALSE
+%token RETURN
+%token IF
+%token WHILE
+%token BREAK
+%token CONTINUE
+%token SC
+%right ASSIGN
+%left EQU
+%left BLE
+%nonassoc BINOP
+%left PLUS_MINUS
+%left MULT_DIVIDE
+%right NOT
+%left LBRACE
+%left RBRACE
+%left LPAREN
+%left RPAREN
+%right ELSE
+
+
+
+
+
+%%
+
+
+Program : Statements {output::printProductionRule(1);}
+Statements : Statement {output::printProductionRule(2);}
+            | Statements Statement {output::printProductionRule(3);}
+Statement   : LBRACE Statements RBRACE {output::printProductionRule(4);}
+            | Type ID SC {output::printProductionRule(5);}
+            | Type ID ASSIGN Exp SC {output::printProductionRule(6);}
+            | ID ASSIGN Exp SC {output::printProductionRule(7);}
+            | Call SC {output::printProductionRule(8);}
+            | RETURN SC {output::printProductionRule(9);}
+            | IF LPAREN Exp RPAREN Statement {output::printProductionRule(10);}
+            | IF LPAREN Exp RPAREN Statement ELSE Statement {output::printProductionRule(11);}
+            | WHILE LPAREN Exp RPAREN Statement {output::printProductionRule(12);}
+            | BREAK SC {output::printProductionRule(13);}
+            | CONTINUE SC {output::printProductionRule(14);}
+Call : ID LPAREN Exp RPAREN {output::printProductionRule(15);}
+Type : INT {output::printProductionRule(16);}
+      | BYTE {output::printProductionRule(17);}
+      | BOOL {output::printProductionRule(18);}
+Exp : LPAREN Exp RPAREN {output::printProductionRule(19);}
+     | Exp MULT_DIVIDE Exp {output::printProductionRule(20);}
+     | Exp PLUS_MINUS Exp {output::printProductionRule(20);}
+     | ID {output::printProductionRule(21);}
+     | Call {output::printProductionRule(22);}
+     | NUM {output::printProductionRule(23);}
+     | NUM B {output::printProductionRule(24);}
+     | STRING {output::printProductionRule(25);}
+     | TRUE {output::printProductionRule(26);}
+     | FALSE {output::printProductionRule(27);}
+     | NOT Exp {output::printProductionRule(28);}
+     | Exp AND Exp {output::printProductionRule(29);}
+     | Exp OR Exp {output::printProductionRule(30);}
+     | Exp BLE Exp {output::printProductionRule(31);}
+     | Exp EQU Exp {output::printProductionRule(31);}
+     | LPAREN Type RPAREN Exp {output::printProductionRule(32);}
+
+
+
+
+%%
+
+
+int main () {
+    return yyparse();
+}
+
+void yyerror(const char *err_msg){
+	output::errorSyn(yylineno);
+	exit(0);
+}
