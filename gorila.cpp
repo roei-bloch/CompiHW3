@@ -283,8 +283,12 @@ void assign_symbol(Node* existing_symbol, Node* assigned_node)
     } 
 }
 
-void add_scope(bool s_is_braces_scope)
+void add_scope()
 {
-    trex->add_scope(s_is_braces_scope);
+    trex->add_scope();
 }
 
+void remove_scope()
+{
+	trex->remove_scope();
+}

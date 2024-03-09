@@ -4,6 +4,7 @@
     void yyerror(const char *err_msg);
     extern int yylineno;
     extern Trex *trex;
+    extern int global_while_ctr;
 %}
 
 %nonassoc NUM
@@ -47,16 +48,24 @@ Program : Statements {}
 Statements : Statement {}
             | Statements Statement {}
 Statement   : LBRACE OPEN_SCOPE Statements RBRACE {remove_scope();}
-            | Type ID SC {add_symbol($1, $2); // false}
-            | Type ID ASSIGN Exp SC {add_symbol($1, $2, $4); // false}
-            | ID ASSIGN Exp SC {assign_symbol($1, $3); // false}
+            | Type ID SC {add_symbol($1, $2);}
+            | Type ID ASSIGN Exp SC {add_symbol($1, $2, $4);}
+            | ID ASSIGN Exp SC {assign_symbol($1, $3);}
             | Call SC {$$ = $1;}
             | RETURN SC {}
-            | IF LPAREN Exp RPAREN OPEN_SCOPE Statement {}
-            | IF LPAREN Exp RPAREN OPEN_SCOPE Statement CLOSE_SCOPE ELSE OPEN_SCOPE Statement {remove_scope();}
-            | WHILE LPAREN CHECK_EXP RPAREN Statement {} // inc global_while_ctr
-            | BREAK SC {}
-            | CONTINUE SC {}
+            | IF LPAREN CHECK_EXP RPAREN OPEN_SCOPE Statement {remove_scope();}
+            | IF LPAREN CHECK_EXP RPAREN OPEN_SCOPE Statement CLOSE_SCOPE ELSE OPEN_SCOPE Statement {remove_scope();}
+            | WHILE LPAREN CHECK_EXP RPAREN OPEN_SCOPE {global_while_ctr++;} Statement {global_while_ctr--; remove_scope();} 
+            | BREAK SC {if(!global_while_ctr)
+	    {
+		output::errorUnexpectedBreak(yylineno);
+		exit(0);
+	    }}
+            | CONTINUE SC {if(!global_while_ctr)
+	    {
+		output::errorUnexpectedContinue(yylineno);
+		exit(0);
+	    }}
 Call : ID LPAREN Exp RPAREN {Node* returned_val = call_function($1, $3);
                              if(returned_val != NULL){
                                 $$ = new NUM(returned_val);}
@@ -89,9 +98,9 @@ Exp : LPAREN Exp RPAREN {$$ = $1;}
         $$ = new NUMB(node);
      }}
 
-CHECK_EXP : {}
+CHECK_EXP : Exp {$$ = is_bool($1);}
 OPEN_SCOPE : {add_scope();}
-CLOSE_SCOPE : {}
+CLOSE_SCOPE : {remove_scope();}
 
 %%
 
