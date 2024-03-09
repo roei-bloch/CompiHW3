@@ -36,13 +36,11 @@ class Scope{
 public:
     std::vector<Symbol*> symbols;
     int current_offset;
-    bool is_while;
     bool is_braces_scope;
     bool daddy_chill;
 
-    Scope(int s_offset, bool s_is_while, bool s_is_braces_scope){
+    Scope(int s_offset, bool s_is_braces_scope){
         current_offset = s_offset;
-        is_while = s_is_while;
         is_braces_scope = s_is_braces_scope;
     }
     void print_scope_content(){
@@ -83,10 +81,10 @@ public:
         scopes.push_back(new Scope(0, false, false));
     }
 
-    void add_scope(bool s_is_while, bool s_is_braces_scope)
+    void add_scope(bool s_is_braces_scope)
     {
         int offset = scopes.back()->current_offset;
-        scopes.push_back(new Scope(offset, s_is_while, s_is_braces_scope));
+        scopes.push_back(new Scope(offset, s_is_braces_scope));
     }
 
     void remove_scope()
@@ -126,6 +124,16 @@ public:
             }
         }
         return NULL;
+    }
+
+    void add_symbol(string name, string type, int numerical_value = 0)
+    {
+        if (!(search_symbol(name)))
+        {
+            this->scopes.back()->add_symbol(name, type, numerical_value);
+        }
+        output::errorDef(yylineno, name);
+        exit(0);
     }
 
 };

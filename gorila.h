@@ -6,7 +6,7 @@
 
 using std::string;
 extern int yylineno;
-void is_bool(Node* node);
+Node* is_bool(Node* node);
 void is_num(Node* node);
 bool calc_relop(Node* left, Node* op, Node* right);
 bool cast_type(Node* node1, Node* node2);

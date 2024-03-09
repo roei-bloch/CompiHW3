@@ -46,47 +46,61 @@
 Program : Statements {}
 Statements : Statement {}
             | Statements Statement {}
-Statement   : LBRACE Statements RBRACE {}
-            | Type ID SC {}
-            | Type ID ASSIGN Exp SC {}
-            | ID ASSIGN Exp SC {}
-            | Call SC {}
+Statement   : LBRACE OPEN_SCOPE Statements RBRACE {remove_scope();}
+            | Type ID SC {add_symbol($1, $2); // false}
+            | Type ID ASSIGN Exp SC {add_symbol($1, $2, $4); // false}
+            | ID ASSIGN Exp SC {assign_symbol($1, $3); // false}
+            | Call SC {$$ = $1;}
             | RETURN SC {}
-            | IF LPAREN Exp RPAREN Statement {}
-            | IF LPAREN Exp RPAREN Statement ELSE Statement {}
-            | WHILE LPAREN Exp RPAREN Statement {}
+            | IF LPAREN Exp RPAREN OPEN_SCOPE Statement {}
+            | IF LPAREN Exp RPAREN OPEN_SCOPE Statement CLOSE_SCOPE ELSE OPEN_SCOPE Statement {remove_scope();}
+            | WHILE LPAREN CHECK_EXP RPAREN Statement {} // inc global_while_ctr
             | BREAK SC {}
             | CONTINUE SC {}
 Call : ID LPAREN Exp RPAREN {Node* returned_val = call_function($1, $3);
                              if(returned_val != NULL){
-                                $$ = new NUM(returned_val);}}
-Type : INT {$$ = new Type($1, "INT"); }
+                                $$ = new NUM(returned_val);}
+                                else {
+                                    $$ = new Node ("", "VOID");
+                                }}
+Type : INT {$$ = new Type($1, "INT");}
       | BYTE {$$ new Type($1, "BYTE");}
       | BOOL {$$ = new Type($1, "BOOL");}
 Exp : LPAREN Exp RPAREN {$$ = $1;}
      | Exp MULT_DIVIDE Exp {}
      | Exp PLUS_MINUS Exp {}
      | ID {$$ = new ID ($1);} // search in scopes and update type
-     | Call {}
+     | Call {$$ = $1;}
      | NUM {$$ = new NUM($1);}
      | NUM B {is_byte($1); $ = new NUMB($1);} 
      | STRING {$$ = new STRING($1);}
      | TRUE {$$ = new BOOL($1);}
      | FALSE {$$ = new BOOL($1);}
-     | NOT Exp {is_bool($2); $$ = ($1->value == "true") ? new BOOL("false") : new BOOL("true");}
-     | Exp AND Exp {is_bool($1); is_bool($3); $$ = ($1->value == "false" || $3->value == "false") ? new BOOL("false") : new BOOL("true");}
-     | Exp OR Exp {is_bool($1); is_bool($3); $$ = ($1->value == "false" && $3->value == "false") ? new BOOL("false") : new BOOL("true");}
+     | NOT Exp {Node *node = is_bool($2); $$ = (node->value == "true") ? new BOOL("false") : new BOOL("true");}
+     | Exp AND Exp {Node *node1 = is_bool($1); Node *node2 = is_bool($3); $$ = (node1->value == "false" || node2->value == "false") ? new BOOL("false") : new BOOL("true");}
+     | Exp OR Exp {Node *node1 = is_bool($1); Node *node2 = is_bool($3); $$ = (node1->value == "false" && node2->value == "false") ? new BOOL("false") : new BOOL("true");}
      | Exp BLE Exp {is_num($1); is_num($3); $$ = calc_relop($1, $2, $3) ? new BOOL("true") : new BOOL("false");}
      | Exp EQU Exp {is_num($1); is_num($3); $$ = calc_relop($1, $2, $3) ? new BOOL("true") : new BOOL("false");}
-     | LPAREN Type RPAREN Exp {$$ = try_number_cast_type(Type, Exp)}
+     | LPAREN Type RPAREN Exp {Node* node = try_number_cast_type(Type, Exp); if (node->type=="INT")
+     {
+        $$ = new NUM(node);
+     }
+     else{
+        $$ = new NUMB(node);
+     }}
 
+CHECK_EXP : {}
+OPEN_SCOPE : {add_scope();}
+CLOSE_SCOPE : {}
 
 %%
 
 
 int main () {
     trex = new Trex();
-    return yyparse();
+    int rc = yyparse();
+    trex->remove_scope();
+    return rc;
 }
 
 void yyerror(const char *err_msg){
