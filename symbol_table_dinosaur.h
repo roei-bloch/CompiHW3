@@ -6,8 +6,8 @@
 #include <iostream>
 
 using std::string;
-int NUM_OF_FUNCS = 3;
-Trex *trex;
+#define NUM_OF_FUNCS 3
+#define DEBUG 0
 
 class Symbol{
 public:
@@ -16,7 +16,7 @@ public:
     string type;
     int numerical_value;
 
-    Symbol(string s_name, int s_offset, string s_type, int s_numerical_value = 0): name(s_name), offset(s_offset), type(s_type), numerical_value(s_numerical_value){} 
+    Symbol(string s_name, int s_offset, string s_type, int s_numerical_value = 1): name(s_name), offset(s_offset), type(s_type), numerical_value(s_numerical_value){} 
 };
 
 class Func{
@@ -36,12 +36,9 @@ class Scope{
 public:
     std::vector<Symbol*> symbols;
     int current_offset;
-    bool is_braces_scope;
-    bool daddy_chill;
 
-    Scope(int s_offset, bool s_is_braces_scope){
+    Scope(int s_offset){
         current_offset = s_offset;
-        is_braces_scope = s_is_braces_scope;
     }
     void print_scope_content(){
         for(Symbol* s : symbols){
@@ -49,7 +46,7 @@ public:
         }
     }
 
-    void add_symbol(string name, string type, int numerical_value = 0){
+    void add_symbol(string name, string type, int numerical_value = 1){
         symbols.push_back(new Symbol(name, current_offset++, type, numerical_value));
     }
 
@@ -78,13 +75,13 @@ public:
         funcs.push_back(new Func("print", "STRING", "VOID"));
         funcs.push_back(new Func("printi", "INT", "VOID"));
         funcs.push_back(new Func("readi", "INT", "INT"));
-        scopes.push_back(new Scope(0, false, false));
+        scopes.push_back(new Scope(0));
     }
 
-    void add_scope(bool s_is_braces_scope)
+    void add_scope()
     {
         int offset = scopes.back()->current_offset;
-        scopes.push_back(new Scope(offset, s_is_braces_scope));
+        scopes.push_back(new Scope(offset));
     }
 
     void remove_scope()
@@ -96,7 +93,7 @@ public:
         } else {
             for(int i = 0; i < NUM_OF_FUNCS; i++){
                 Func *func = funcs[i];
-                std::cout << func->name + " (" + func->argument_type + ")->" + func->output_type + " 0"; 
+                std::cout << func->name + " (" + func->argument_type + ")->" + func->output_type + " 0" << std::endl; 
             }
             scopes.back()->print_scope_content();
             scopes.pop_back();
@@ -126,11 +123,12 @@ public:
         return NULL;
     }
 
-    void add_symbol(string name, string type, int numerical_value = 0)
+    void add_symbol(string name, string type, int numerical_value = 1)
     {
-        if (!(search_symbol(name)))
+        if (!(search_symbol(name)) && (!(search_func(name))))
         {
             this->scopes.back()->add_symbol(name, type, numerical_value);
+            return;
         }
         output::errorDef(yylineno, name);
         exit(0);
